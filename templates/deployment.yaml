@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "idta-aasx-server.fullname" . }}
+  labels:
+    {{- include "idta-aasx-server.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "idta-aasx-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "idta-aasx-server.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: Kestrel__Endpoints__Http__Url
+            value: http://*:5001
+          - name: ASPNETCORE_ENVIRONMENT
+            value: Development
+          - name: ASPNETCORE_URLS
+            value: http://+:5001 
+          ports:
+            - name: http
+              containerPort: 5001
+              protocol: TCP
+ 
